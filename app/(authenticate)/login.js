@@ -14,7 +14,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import axios from "axios";
 import { Alert } from "react-native";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const login = () => {
   const [email, setEmail] = useState("");
@@ -23,36 +23,46 @@ const login = () => {
 
   useEffect(() => {
     checkLoginStatus();
-  },[])
+  }, []);
 
   const checkLoginStatus = async () => {
-    try{
-        const token = await AsyncStorage.getItem("authToken");
-        if(token){
-            router.replace("/(tabs)/home")
-        }
-    } catch(error){
-        console.log(error);
-    }
-}
-
-  const handleLogin = () => {
-    if (email && password) {
-      const user = {
-        email: email,
-        password: password,
-      };
-
-      axios.post("http://10.0.2.2:8000/api/login", user).then((response) => {
-        const token = response.data.token;
-        AsyncStorage.setItem("authToken", token);
-        console.log(response.data)
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
         router.replace("/(tabs)/home");
-      }).then((error)=>{
-        Alert.alert("Something went wrong.",error.response.data.message)
-      });
-    } else {
-      Alert.alert("Invalid input.", "Please enter all fields.");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      if (email && password) {
+        const user = {
+          email: email,
+          password: password,
+        };
+        const response = await axios.post(
+          "http://10.0.2.2:8000/api/login",
+          user
+        );
+        const token = response.data.token;
+        const id = response.data._id
+        console.log(token)
+        console.log("id:",response.data._id)
+        AsyncStorage.setItem("authToken", token);
+        AsyncStorage.setItem("authId", id);
+        router.replace("/(tabs)/home");
+      } else {
+        Alert.alert("Invalid input.", "Please enter all fields.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      Alert.alert(
+        "Something went wrong.",
+        error.response ? error.response.data.message : "Unknown error"
+      );
     }
   };
   return (

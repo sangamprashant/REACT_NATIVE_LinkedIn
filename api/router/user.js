@@ -125,7 +125,7 @@ router.post("/api/login", async (req, res) => {
     );
 
     // Respond with the token
-    res.status(200).json({ token, userId: user._id, message: "Login successful" });
+    res.status(200).json({token,_id:user._id});
   } catch (error) {
     console.error("Error during login:", error);
     res.status(500).json({ message: "Server error during login" });
@@ -135,7 +135,6 @@ router.post("/api/login", async (req, res) => {
 router.get("/api/profile/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
-console.log(userId)
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "user not found" });
@@ -147,11 +146,9 @@ console.log(userId)
   }
 });
 
-router.get("/users/:userId", async (req, res) => {
+router.get("/api/users/:userId", async (req, res) => {
   try {
     const loggedInUserId = req.params.userId;
-
-    //fetch the logged-in user's connections
     const loggedInuser = await User.findById(loggedInUserId).populate(
       "connections",
       "_id"
@@ -174,6 +171,86 @@ router.get("/users/:userId", async (req, res) => {
   } catch (error) {
     console.log("Error retrieving users", error);
     res.status(500).json({ message: "Error retrieving users" });
+  }
+});
+//send a connection request
+router.post("/api/connection-request", async (req, res) => {
+  try {
+    const { currentUserId, selectedUserId } = req.body;
+
+    await User.findByIdAndUpdate(selectedUserId, {
+      $push: { connectionRequests: currentUserId },
+    });
+
+    await User.findByIdAndUpdate(currentUserId, {
+      $push: { sentConnectionRequests: selectedUserId },
+    });
+
+    res.sendStatus(200);
+  } catch (error) {
+    res.status(500).json({ message: "Error creating connection request" });
+  }
+});
+//endpoint to show all the connections requests
+router.get("/api/connection-request/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId)
+      .populate("connectionRequests", "name email profileImage")
+      .lean();
+
+    const connectionRequests = user.connectionRequests;
+
+    res.json(connectionRequests);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+//endpoint to accept a connection request
+router.post("/api/connection-request/accept", async (req, res) => {
+  try {
+    const { senderId, recepientId } = req.body;
+
+    const sender = await User.findById(senderId);
+    const recepient = await User.findById(recepientId);
+
+    sender.connections.push(recepientId);
+    recepient.connections.push(senderId);
+
+    recepient.connectionRequests = recepient.connectionRequests.filter(
+      (request) => request.toString() !== senderId.toString()
+    );
+
+    sender.sentConnectionRequests = sender.sentConnectionRequests.filter(
+      (request) => request.toString() !== recepientId.toString()
+    );
+
+    await sender.save();
+    await recepient.save();
+
+    res.status(200).json({ message: "Friend request acccepted" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+//endpoint to fetch all the connections of a user
+router.get("/api/connections/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const user = await User.findById(userId)
+      .populate("connections", "name profileImage createdAt")
+      .exec();
+
+    if (!user) {
+      return res.status(404).json({ message: "User is not found" });
+    }
+    res.status(200).json({ connections: user.connections });
+  } catch (error) {
+    console.log("error fetching the connections", error);
+    res.status(500).json({ message: "Error fetching the connections" });
   }
 });
 
