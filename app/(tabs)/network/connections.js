@@ -35,8 +35,6 @@ const connections = () => {
       console.log(error);
     }
   };
-
-  console.log(connections);
   return (
     <View style={{ flex: 1, backgroundColor: "white" }}>
       <View
