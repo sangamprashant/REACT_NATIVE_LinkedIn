@@ -29,7 +29,9 @@ db.once("open", () => {
 });
 
 require("./models/user");
+require("./models/post");
 app.use(require("./router/user"));
+app.use(require("./router/post"));
 
 // Your additional routes and logic go here
 

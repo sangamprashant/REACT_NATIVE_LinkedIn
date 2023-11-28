@@ -11,7 +11,6 @@ import React, { useState, useEffect } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import jwt_decode from "jwt-decode";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { firebase } from "../../../firebase";
@@ -25,9 +24,7 @@ const index = () => {
   const router = useRouter();
   useEffect(() => {
     const fetchUser = async () => {
-      const token = await AsyncStorage.getItem("authToken");
-      const decodedToken = jwt_decode(token);
-      const userId = decodedToken.userId;
+      const userId = await AsyncStorage.getItem("authId");
       setUserId(userId);
     };
 
@@ -37,11 +34,9 @@ const index = () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [3,4],
       quality: 1,
     });
-
-    console.log(result);
     if (!result.canceled) {
       setImage(result.assets[0].uri);
     }
@@ -49,7 +44,6 @@ const index = () => {
   const createPost = async () => {
     try {
       const uploadedUrl = await uploadFile();
-
       const postData = {
         description: description,
         imageUrl: uploadedUrl,
@@ -57,7 +51,7 @@ const index = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:3000/create",
+        "http://10.0.2.2:8000/api/create",
         postData
       );
 
@@ -71,8 +65,6 @@ const index = () => {
   };
   const uploadFile = async () => {
     try {
-      // Ensure that 'image' contains a valid file URI
-      console.log("Image URI:", image);
 
       const { uri } = await FileSystem.getInfoAsync(image);
 
@@ -99,12 +91,9 @@ const index = () => {
       await ref.put(blob);
 
       const downloadURL = await ref.getDownloadURL();
-      // setUrl(downloadURL);
       return downloadURL;
-      // Alert.alert("Photo uploaded");
     } catch (error) {
       console.log("Error:", error);
-      // Handle the error or display a user-friendly message
     }
   };
   return (

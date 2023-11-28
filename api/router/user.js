@@ -253,5 +253,19 @@ router.get("/api/connections/:userId", async (req, res) => {
     res.status(500).json({ message: "Error fetching the connections" });
   }
 });
+//endpoint to update user description
+router.put("/api/profile/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { userDescription } = req.body;
+
+    await User.findByIdAndUpdate(userId, { userDescription });
+
+    res.status(200).json({ message: "User profile updated successfully" });
+  } catch (error) {
+    console.log("Error updating user Profile", error);
+    res.status(500).json({ message: "Error updating user profile" });
+  }
+});
 
 module.exports = router;
